@@ -1,0 +1,4 @@
+bool kill
+string name
+---
+bool killed

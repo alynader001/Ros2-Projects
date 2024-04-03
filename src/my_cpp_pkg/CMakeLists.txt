@@ -48,7 +48,7 @@ add_executable(battery src/battery.cpp)
 ament_target_dependencies(battery rclcpp my_robot_interfaces)
 
 add_executable(turtlesim_spawner src/turtlesim_spawner.cpp)
-ament_target_dependencies(turtlesim_spawner rclcpp turtlesim)
+ament_target_dependencies(turtlesim_spawner rclcpp turtlesim my_robot_interfaces)
 
 install(TARGETS
   cpp_node
