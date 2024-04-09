@@ -2,6 +2,8 @@
 #include "turtlesim/srv/spawn.hpp"
 #include "my_robot_interfaces/srv/kill_turtle.hpp"
 #include "turtlesim/srv/kill.hpp"
+#include "my_robot_interfaces/msg/alive_turtles.hpp"
+#include "my_robot_interfaces/msg/turtle_object.hpp"
 #include <random>
 
 using std::placeholders::_1;
@@ -18,10 +20,12 @@ class TurtlesimSpawnerNode : public rclcpp::Node
       server_ = this->create_service<my_robot_interfaces::srv::KillTurtle>(
         "kill_turtle",
         std::bind(&TurtlesimSpawnerNode::callbackKillTurtle, this, _1, _2));
+      publisher_ = this->create_publisher<my_robot_interfaces::msg::AliveTurtles>("alive_turtles", 10);
       RCLCPP_INFO(this->get_logger(), "Service server has been started.");
     }
 
   private:
+    void alive_turtles_pub()
     void test_func(){
       RCLCPP_INFO(this->get_logger(), "Executing every 1 second.");
     }
@@ -99,6 +103,7 @@ class TurtlesimSpawnerNode : public rclcpp::Node
     //std::thread thread1_;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Service<my_robot_interfaces::srv::KillTurtle>::SharedPtr server_;
+    rclcpp::Publisher<my_robot_interfaces::msg::AliveTurtles>::SharedPtr publisher_;
 };
 int main(int argc, char **argv)
 {
