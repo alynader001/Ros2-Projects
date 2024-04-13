@@ -5,6 +5,7 @@
 #include "my_robot_interfaces/msg/alive_turtles.hpp"
 #include "my_robot_interfaces/msg/turtle_object.hpp"
 #include <random>
+#include <string>
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -45,9 +46,6 @@ class TurtlesimSpawnerNode : public rclcpp::Node
       std::mt19937 gen(rd());
       std::uniform_int_distribution<int> dist1(0, 10);
       std::uniform_int_distribution<int> dist2(0, 360);
-
-      //Creating object that will be published in the alive turtles array.
-      my_robot_interfaces::msg::TurtleObject new_turtle;
       
       while(true){
         auto request = std::make_shared<turtlesim::srv::Spawn::Request>();
@@ -55,26 +53,25 @@ class TurtlesimSpawnerNode : public rclcpp::Node
         request->y = dist1(gen);
         request->theta = dist2(gen);
 
-        new_turtle.x = request->x
-        new_turtle.y = request->y
-
         auto future = client->async_send_request(request);
         try
         {
           auto response = future.get();
           RCLCPP_INFO(this->get_logger(), "A new turtle named %s has spawned", response->name.c_str());
-          new_turtle.name = response->name;
+          auto turtle_ = my_robot_interfaces::msg::TurtleObject();
+          turtle_.name = response->name;
+          turtle_.x = request->x;
+          turtle_.y = request->y;
+          alive_turtles_array.push_back(turtle_);
+          auto msg = my_robot_interfaces::msg::AliveTurtles();
+          msg.turtle_array = alive_turtles_array;
+          publisher_->publish(msg);
         }
           catch (const std::exception &e)
         {
           RCLCPP_ERROR(this->get_logger(), "Service call failed");
         }
-        alive_turtles_.push_back(new_turtle);
-        auto msg = my_robot_interfaces::msg::AliveTurtles();
-        msg.turtle_array = alive_turtles_;
-        publisher_->publish(msg);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
       }      
     }
 
@@ -89,6 +86,17 @@ class TurtlesimSpawnerNode : public rclcpp::Node
 
     void call_kill_service(std::string name,
       const my_robot_interfaces::srv::KillTurtle::Response::SharedPtr result){
+
+      auto turtle_ = std::find_if(alive_turtles_array.begin(), alive_turtles_array.end(),
+       [&name](const my_robot_interfaces::msg::TurtleObject search_obj){
+        return search_obj.name == name;
+       });
+      if(turtle_ != alive_turtles_array.end()){
+        alive_turtles_array.erase(turtle_);
+      }
+      auto msg = my_robot_interfaces::msg::AliveTurtles();
+      msg.turtle_array = alive_turtles_array;
+      publisher_->publish(msg);
       auto client = this->create_client<turtlesim::srv::Kill>("kill");
       while (!client->wait_for_service(std::chrono::seconds(1)))
       {
@@ -115,7 +123,7 @@ class TurtlesimSpawnerNode : public rclcpp::Node
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Service<my_robot_interfaces::srv::KillTurtle>::SharedPtr server_;
     rclcpp::Publisher<my_robot_interfaces::msg::AliveTurtles>::SharedPtr publisher_;
-    std::vector<my_robot_interfaces::msg::TurtleObject> alive_turtles_; 
+    std::vector<my_robot_interfaces::msg::TurtleObject> alive_turtles_array;
 };
 int main(int argc, char **argv)
 {
