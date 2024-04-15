@@ -4,13 +4,14 @@
   <name>my_robot_bringup</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="ed@todo.todo">ed</maintainer>
+  <maintainer email="alynader2004@gmail.com">ed</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <exec_depend>my_py_pkg</exec_depend>
   <exec_depend>my_cpp_pkg</exec_depend>
+  <exec_depend>turtlesim</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
