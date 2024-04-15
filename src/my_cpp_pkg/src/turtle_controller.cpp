@@ -19,6 +19,9 @@ class TurtleControllerNode : public rclcpp::Node
         std::bind(&TurtleControllerNode::update_current_location, this, std::placeholders::_1));
 
         cmd_publisher = this->create_publisher<geometry_msgs::msg::Twist>("turtle1/cmd_vel", 10);
+      
+      loop_timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(10), std::bind(&TurtleControllerNode::kill_turtle, this));
     }
   
   private:
@@ -29,18 +32,25 @@ class TurtleControllerNode : public rclcpp::Node
     }
     void array_updated(const my_robot_interfaces::msg::AliveTurtles msg){
       if (msg.turtle_array.size() != 0 ){
-        kill_turtle(msg.turtle_array[0].name, msg.turtle_array[0].x, msg.turtle_array[0].y);
+        //RCLCPP_INFO(this->get_logger(), msg.turtle_array[0].name.c_str());
+        name_target = msg.turtle_array[0].name;
+        x_target = msg.turtle_array[0].x;
+        y_target = msg.turtle_array[0].y;
+        targets_available = true;
+      }
+      else{
+        targets_available = false;
       }
     }
 
 
-    void kill_turtle(std::string name, float x, float y){
-      bool turtle_caught = false;
+    void kill_turtle(){
 
-      while(!turtle_caught){
+      if(targets_available){
+        RCLCPP_INFO(this->get_logger(), "x_location: %f, y_location: %f", x_location, y_location);
 
-        double dist_x = x - x_location;
-        double dist_y = y - y_location;
+        double dist_x = x_target - x_location;
+        double dist_y = y_target - y_location;
         double distance = std::sqrt(dist_x * dist_x + dist_y * dist_y);
 
         auto msg = geometry_msgs::msg::Twist();
@@ -48,36 +58,35 @@ class TurtleControllerNode : public rclcpp::Node
         if (distance > 0.5) {
 
           //position
+          RCLCPP_INFO(this->get_logger(), "Linear velocity is: %f", 2 * distance);
           msg.linear.x = 2 * distance;
 
           //orientation
           double steering_angle = std::atan2(dist_y, dist_x);
           double angle_diff = steering_angle - theta_angle;
           
-          if (angle_diff > M_PI)
-          {
+        if (angle_diff > M_PI) {
               angle_diff -= 2 * M_PI;
           }
           else if (angle_diff < -M_PI)
           {
               angle_diff += 2 * M_PI;
           }
+          RCLCPP_INFO(this->get_logger(), "The angular velocity is: %f", 6 * angle_diff);
           msg.angular.z = 6 * angle_diff;
         }
         else {
           //target reached!
           msg.linear.x = 0.0;
           msg.angular.z = 0.0;
-          turtle_caught = true;
+          threads_.push_back(std::thread(std::bind(&TurtleControllerNode::callKillService, this, name_target)));
         }
-
         cmd_publisher->publish(msg);
-
       }
-
-      threads_.push_back(std::thread(std::bind(&TurtleControllerNode::callKillService, this, name)));
+      else{
+        return;
+      }
     }
-
 
     void callKillService(std::string name){
       auto client = this->create_client<my_robot_interfaces::srv::KillTurtle>("kill_turtle");
@@ -108,9 +117,14 @@ class TurtleControllerNode : public rclcpp::Node
     rclcpp::Subscription<turtlesim::msg::Pose>::SharedPtr location_subscriber;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_publisher;
     std::vector<std::thread> threads_;
+    rclcpp::TimerBase::SharedPtr loop_timer_;
     float x_location;
     float y_location;
     float theta_angle;
+    std::string name_target;
+    float x_target;
+    float y_target;
+    bool targets_available;
 };
  
 int main(int argc, char **argv)
