@@ -11,12 +11,12 @@ def generate_launch_description():
     )
 
     spawner_node = Node(
-        package="my_cpp_pkg",
+        package="turtle_game",
         executable="turtlesim_spawner"
     )
 
     turtle1_controller = Node(
-        package="my_cpp_pkg",
+        package="turtle_game",
         executable="turtle_controller"    
     )
     

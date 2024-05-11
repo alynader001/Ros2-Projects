@@ -48,12 +48,6 @@ ament_target_dependencies(led_panel rclcpp my_robot_interfaces)
 add_executable(battery src/battery.cpp)
 ament_target_dependencies(battery rclcpp my_robot_interfaces)
 
-add_executable(turtlesim_spawner src/turtlesim_spawner.cpp)
-ament_target_dependencies(turtlesim_spawner rclcpp turtlesim my_robot_interfaces)
-
-add_executable(turtle_controller src/turtle_controller.cpp)
-ament_target_dependencies(turtle_controller rclcpp turtlesim my_robot_interfaces geometry_msgs)
-
 install(TARGETS
   cpp_node
   robot_news_station
@@ -65,8 +59,6 @@ install(TARGETS
   hardware_status_publisher
   led_panel
   battery
-  turtlesim_spawner
-  turtle_controller
   DESTINATION lib/${PROJECT_NAME}
 )
 
